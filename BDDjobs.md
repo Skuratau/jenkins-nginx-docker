@@ -1,4 +1,5 @@
 | job | node |
+|:----:|:----:|
 | SHOPPING-apis-mocha-cloud-adhoc-test-old |  taf-apis-prod  |
 | shopping-smoke-tests-sit2-temp |  taf-bdd-prod4  |
 | SHOPPING-bdd-search-sit2-win7-chrome-timed-test |  shopping-bdd-prod-win2008r2-internal  |
