@@ -1,0 +1,52 @@
+version: '2'
+services:
+  nginx:
+    restart: always
+    image: "nginx:1.11.0-alpine"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/server.conf:/etc/nginx/conf.d/server.conf
+      - /var/server/conf/jenkins/master:/opt/jenkins:ro
+    logging:
+      driver: syslog
+      options:
+        tag: nginx
+  jenkins:
+    restart: always
+    image: "jenkins:2.3-alpine"
+    ports:
+      - "127.0.0.1:50000:50000"
+    volumes:
+      - /var/server/conf/jenkins/master:/var/jenkins_home
+    environment:
+      - JAVA_OPTS="-Djava.awt.headless=true
+        -Dhudson.plugins.git.GitSCM.verbose=true
+        -XX:NewSize=256m
+        -XX:MaxNewSize=256m
+        -XX:PermSize=256m
+        -XX:+DisableExplicitGC
+        -XX:MaxPermSize=512m
+        -Xms512m
+        -Xmx3000m
+        -Dsvnkit.http.sslProtocols=\"TLSv1\"
+        -Dorg.apache.commons.jelly.tags.fmt.timeZone=Europe/London
+        -Duser.timezone=Europe/London
+        -Dhttps.protocols=TLSv1
+        -Dorg.eclipse.jetty.server.Request.maxFormContentSize=5000000
+        -Dhudson.plugins.parameterizedtrigger.ProjectSpecificParametersActionFactory.compatibility_mode=true
+        -XX:ReservedCodeCacheSize=256m
+        -XX:InitialCodeCacheSize=128m
+        -XX:+UseCodeCacheFlushing"
+    links:
+      - "nginx:nginx"
+    logging:
+      driver: syslog
+      options:
+        tag: jenkins
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
