@@ -1,52 +1,81 @@
 version: '2'
+
 services:
-  nginx:
-    restart: always
-    image: "nginx:1.11.0-alpine"
+  elasticsearch:
+    image: elasticsearch
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - /var/server/conf/jenkins/master:/opt/jenkins:ro
-    logging:
-      driver: syslog
-      options:
-        tag: nginx
-  jenkins:
-    restart: always
-    image: "jenkins:2.3-alpine"
-    ports:
-      - "127.0.0.1:50000:50000"
-    volumes:
-      - /var/server/conf/jenkins/master:/var/jenkins_home
+      - "9200:9200"
+      - "9300:9300"
     environment:
-      - JAVA_OPTS="-Djava.awt.headless=true
-        -Dhudson.plugins.git.GitSCM.verbose=true
-        -XX:NewSize=256m
-        -XX:MaxNewSize=256m
-        -XX:PermSize=256m
-        -XX:+DisableExplicitGC
-        -XX:MaxPermSize=512m
-        -Xms512m
-        -Xmx3000m
-        -Dsvnkit.http.sslProtocols=\"TLSv1\"
-        -Dorg.apache.commons.jelly.tags.fmt.timeZone=Europe/London
-        -Duser.timezone=Europe/London
-        -Dhttps.protocols=TLSv1
-        -Dorg.eclipse.jetty.server.Request.maxFormContentSize=5000000
-        -Dhudson.plugins.parameterizedtrigger.ProjectSpecificParametersActionFactory.compatibility_mode=true
-        -XX:ReservedCodeCacheSize=256m
-        -XX:InitialCodeCacheSize=128m
-        -XX:+UseCodeCacheFlushing"
-    links:
-      - "nginx:nginx"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+    user: root
+    volumes:
+      - /conf/elasticsearch/node2:/etc/elasticsearch/
+    networks:
+      elk_net:
+        ipv4_address: 172.24.0.5
+
+services:
+  elasticsearch:
+    image: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+    user: root
+    volumes:
+      - /conf/elasticsearch/node1:/etc/elasticsearch/
+    networks:
+      elk_net:
+        ipv4_address: 172.24.0.4
+
+
+
+
+  logstash:
+    image: logstash
+    command: -f /etc/logstash/conf.d/
+    volumes:
+      - /conf/logstash/config:/etc/logstash/conf.d:rw
+    ports:
+      - "0.0.0.0:5000:5000"
+    depends_on:
+      - elasticsearch
+    user: root
+    networks:
+      elk_net:
+        ipv4_address: 172.24.0.3
+#    extra_hosts:
+#      - "elasticsearch:172.24.0.4"
+
+
+  kibana:
+    image: kibana
+    volumes:
+      - /conf/kibana/config/:/etc/kibana/
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    user: root
+    networks:
+      elk_net:
+        ipv4_address: 172.24.0.2
+#    extra_hosts:
+#      - "elasticsearch:172.24.0.4"
     logging:
       driver: syslog
       options:
-        tag: jenkins
-    ulimits:
-      nproc: 65535
-      nofile:
-        soft: 20000
-        hard: 40000
+        syslog-address: "tcp://localhost:5000"
+        tag: "kibana"
+
+
+
+networks:
+  elk_net:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.24.0.0/24
+        gateway: 172.24.0.1
