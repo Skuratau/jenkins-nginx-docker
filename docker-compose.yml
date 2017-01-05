@@ -10,29 +10,11 @@ services:
       ES_JAVA_OPTS: "-Xms1g -Xmx1g"
     user: root
     volumes:
-      - /conf/elasticsearch/node2:/etc/elasticsearch/
-    networks:
-      elk_net:
-        ipv4_address: 172.24.0.5
-
-services:
-  elasticsearch:
-    image: elasticsearch
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    environment:
-      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
-    user: root
-    volumes:
       - /conf/elasticsearch/node1:/etc/elasticsearch/
     networks:
       elk_net:
         ipv4_address: 172.24.0.4
-
-
-
-
+        
   logstash:
     image: logstash
     command: -f /etc/logstash/conf.d/
@@ -46,9 +28,8 @@ services:
     networks:
       elk_net:
         ipv4_address: 172.24.0.3
-#    extra_hosts:
-#      - "elasticsearch:172.24.0.4"
-
+    extra_hosts:
+      - "elasticsearch:172.24.0.4"
 
   kibana:
     image: kibana
@@ -62,8 +43,8 @@ services:
     networks:
       elk_net:
         ipv4_address: 172.24.0.2
-#    extra_hosts:
-#      - "elasticsearch:172.24.0.4"
+    extra_hosts:
+      - "elasticsearch:172.24.0.4"
     logging:
       driver: syslog
       options:
